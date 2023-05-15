@@ -88,7 +88,7 @@ class GoodPluginsPlugin:
                             # 调用https://trace.moe/anilist/翻译成中文
 
                             self.busy[message_obj.sender.user_id] = False
-                            return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n视频链接: {data['result'][0]['video']}\n精准空降截图:"),
+                            return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
                                                     Image.fromURL(data['result'][0]['image'])], "sf"])
                         else:
                             self.busy[message_obj.sender.user_id] = False
