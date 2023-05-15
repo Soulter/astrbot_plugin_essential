@@ -65,6 +65,7 @@ class GoodPluginsPlugin:
             try:
                 if isinstance(message_obj.message[1], Image):
                     url += message_obj.message[1].url
+                    print(url)
                     if qq_platform != None:
                         try:
                             qq_platform.send(message_obj, "正在搜索中，请稍等。")
@@ -78,9 +79,9 @@ class GoodPluginsPlugin:
                             return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: {data['result'][0]['episode']}\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}"),
                                                     Image.fromURL(data['result'][0]['image'])], "sf"])
                         else:
-                            return True, tuple([False, "没有找到相关番剧", "sf"])
+                            return True, tuple([False, "api出错", "sf"])
             except Exception as e:
-                return True, tuple([False, f"出错：{str(e)}", "sf"])
+                raise e
         
         else:
             return False, None
