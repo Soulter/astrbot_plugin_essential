@@ -104,7 +104,7 @@ class GoodPluginsPlugin:
             "author": "Soulter"
         }
     
-    def time_convert(t):
+    def time_convert(self, t):
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
 
