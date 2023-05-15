@@ -84,10 +84,18 @@ class GoodPluginsPlugin:
                             data["result"][0]["from"] = self.time_convert(data["result"][0]["from"])
                             data["result"][0]["to"] = self.time_convert(data["result"][0]["to"])
 
+                            # name = data["result"][0]["anilist"]["title"]["native"]
+                            # 调用https://trace.moe/anilist/翻译成中文
+
+                            self.busy[message_obj.sender.user_id] = False
                             return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
                                                     Image.fromURL(data['result'][0]['image'])], "sf"])
                         else:
-                            return True, tuple([False, "api出错或没查到", "sf"])
+                            self.busy[message_obj.sender.user_id] = False
+                            return True, tuple([False, "没有找到相关番剧", "sf"])
+                    else:
+                        self.busy[message_obj.sender.user_id] = False
+                        return True, tuple([False, "api出错", "sf"])
             except Exception as e:
                 self.busy[message_obj.sender.user_id] = False
                 raise e
