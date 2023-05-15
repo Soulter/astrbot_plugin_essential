@@ -5,6 +5,7 @@ from nakuru import (
 )
 from botpy.message import Message, DirectMessage
 import random
+import requests
 
 class GoodPluginsPlugin:
     """
@@ -23,7 +24,19 @@ class GoodPluginsPlugin:
                 urls = ["https://t.mwm.moe/pc/",
                         "https://t.lizi.moe/mp",
                         "https://t.lizi.moe/fj",]
-                return True, tuple([True, [Image.fromURL(url=random.choice(urls))], "moe"])
+                
+                resp = requests.get(random.choice(urls))
+                if resp.status_code == 200:
+                    # 保存图片到本地
+                    try:
+                        with open("moe.jpg", "wb") as f:
+                            f.write(resp.content)
+                        # 发送图片
+                        return True, tuple([True, [Image.fromFileSystem("moe.jpg")], "moe"])
+                    except Exception as e:
+                        return True, tuple([False, f"获取图片失败: {str(e)}", "moe"])
+                else:
+                    return True, tuple([False, "获取图片失败", "moe"])
             elif platform == "qqchan":
                 """
                 频道处理逻辑(频道暂时只支持回复字符串类型的信息，返回的信息都会被转成字符串，如果不想处理某一个平台的信息，直接返回False, None就行)
