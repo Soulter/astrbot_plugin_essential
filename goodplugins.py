@@ -79,11 +79,15 @@ class GoodPluginsPlugin:
                     resp = requests.get(url)
                     if resp.status_code == 200:
                         data = resp.json()
-                        if data["result"]:
-                            return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: {data['result'][0]['episode']}\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}"),
+                        if data["result"] and len(data["result"]) > 0:
+                            # 番剧时间转换为x分x秒
+                            data["result"][0]["from"] = self.time_convert(data["result"][0]["from"])
+                            data["result"][0]["to"] = self.time_convert(data["result"][0]["to"])
+
+                            return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
                                                     Image.fromURL(data['result'][0]['image'])], "sf"])
                         else:
-                            return True, tuple([False, "api出错", "sf"])
+                            return True, tuple([False, "api出错或没查到", "sf"])
             except Exception as e:
                 self.busy[message_obj.sender.user_id] = False
                 raise e
@@ -99,6 +103,10 @@ class GoodPluginsPlugin:
             "version": "v1.0.2",
             "author": "Soulter"
         }
+    
+    def time_convert(t):
+        m, s = divmod(t, 60)
+        return f"{int(m)}分{int(s)}秒"
 
 
         # 热知识：检测消息开头指令，使用以下方法
