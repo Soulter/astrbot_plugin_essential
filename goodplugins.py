@@ -22,15 +22,15 @@ class GoodPluginsPlugin:
     #     self.busy[qq] = False
 
     def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform = None):
-        if platform == "gocq":
-            if message_obj.sender.user_id in self.busy and self.busy[message_obj.sender.user_id]:
-                return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
-            else:
-                self.busy[message_obj.sender.user_id] = True
+
 
         if message == "moe" or message == "动漫图片":
 
             if platform == "gocq":
+                if message_obj.sender.user_id in self.busy and self.busy[message_obj.sender.user_id]:
+                    return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
+                else:
+                    self.busy[message_obj.sender.user_id] = True
                 """
                 QQ平台指令处理逻辑
                 """
@@ -61,6 +61,10 @@ class GoodPluginsPlugin:
                 return True, tuple([True, "QQ频道暂时无法使用此插件，本机器人支持QQ平台，请在QQ里使用本插件。", "moe"])
         
         elif message == "sf" or message == "搜番":
+            if message_obj.sender.user_id in self.busy and self.busy[message_obj.sender.user_id]:
+                return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
+            else:
+                self.busy[message_obj.sender.user_id] = True
             url = "https://trace.moe/?anilistInfo&url=" 
             try:
                 if isinstance(message_obj.message[1], Image):
@@ -81,6 +85,7 @@ class GoodPluginsPlugin:
                         else:
                             return True, tuple([False, "api出错", "sf"])
             except Exception as e:
+                self.busy[message_obj.sender.user_id] = False
                 raise e
         
         else:
