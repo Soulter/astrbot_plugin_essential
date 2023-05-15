@@ -99,7 +99,7 @@ class GoodPluginsPlugin:
         return {
             "name": "GoodPlugins",
             "desc": "收集一些好玩的插件（随机动漫图片、以图搜番等）",
-            "help": "指令: \nmoe或者动漫图片\n效果: 随机发送一张动漫图片\n\nsf或者搜番\n效果: 以图搜番\n",
+            "help": "指令: \nmoe或者动漫图片\n效果: 随机发送一张动漫图片\n\nsf或者搜番 然后带上图片\n效果: 以图搜番\n",
             "version": "v1.0.2",
             "author": "Soulter"
         }
