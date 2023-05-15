@@ -87,8 +87,12 @@ class GoodPluginsPlugin:
                             # name = data["result"][0]["anilist"]["title"]["native"]
                             # 调用https://trace.moe/anilist/翻译成中文
 
+                            warn = ""
+                            if float(data["result"][0]["similarity"]) < 0.8:
+                                warn = "相似度过低，可能不是同一番剧。建议：相同尺寸大小的截图; 去除四周的黑边\n\n"
+
                             self.busy[message_obj.sender.user_id] = False
-                            return True, tuple([True, [Plain(f"番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
+                            return True, tuple([True, [Plain(f"{warn}番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
                                                     Image.fromURL(data['result'][0]['image'])], "sf"])
                         else:
                             self.busy[message_obj.sender.user_id] = False
