@@ -65,7 +65,7 @@ class GoodPluginsPlugin:
                 return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
             else:
                 self.busy[message_obj.sender.user_id] = True
-            url = "https://trace.moe/?anilistInfo&url=" 
+            url = "https://api.trace.moe/search?anilistInfo&url=" 
             try:
                 if isinstance(message_obj.message[1], Image):
                     url += message_obj.message[1].url
