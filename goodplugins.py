@@ -6,6 +6,10 @@ from nakuru import (
 from botpy.message import Message, DirectMessage
 import random
 import requests
+import PIL
+from PIL import Image as PILImage
+from PIL import ImageDraw as PILImageDraw
+from PIL import ImageFont as PILImageFont
 # import moe
 # import search_anime
 
@@ -48,6 +52,12 @@ class GoodPluginsPlugin:
                 频道处理逻辑(频道暂时只支持回复字符串类型的信息，返回的信息都会被转成字符串，如果不想处理某一个平台的信息，直接返回False, None就行)
                 """
                 return True, tuple([True, "QQ频道SDK暂时无法使用此插件，本机器人支持GOCQ平台，请在QQ里使用本插件。", "moe"])
+            
+        elif message.startswith("喜报"):
+            if platform == "gocq":
+                msg = message[2:].strip()
+                res = self.congrats(msg)
+                return res[0], res[1]
         
         else:
             return False, None
@@ -66,6 +76,33 @@ class GoodPluginsPlugin:
         # 热知识：检测消息开头指令，使用以下方法
         # if message.startswith("原神"):
         #     pass
+
+    def congrats(self, msg):
+        # 超过20个字，加一个换行
+        is_new_line = False
+        tmpl = msg
+        for i in range(20, len(msg), 20):
+            msg = msg[:i] + "\n" + msg[i:]
+            is_new_line = True
+        if is_new_line:
+            tmpl = msg[:20]
+        # 获得绝对路径
+        path = os.path.abspath(os.path.dirname(__file__))
+        # 读取文件
+        bg = path + "/congrats.jpg"
+        # PIL编辑，msg居中
+        img = PILImage.open(bg)
+        draw = PILImageDraw.Draw(img)
+        
+        font = PILImageFont.truetype(path + "/simhei.ttf", 65)
+        # 红色字体，外边框为黄色，阴影
+        draw.text((img.size[0] / 2 - font.getsize(tmpl)[0] / 2, img.size[1] / 2 - font.getsize(tmpl)[1] / 2), msg, 
+                  font=font, fill=(255, 0, 0), stroke_width=3, stroke_fill=(255, 255, 0),
+                  )
+        # 保存图片
+        img.save(path + "/t.jpg")
+        # 发送图片
+        return True, tuple([True, [Image.fromFileSystem(path + "/t.jpg")], "congrats"])
 
     def get_moe(self, message_obj, busy):
         if message_obj.sender.user_id in busy and busy[message_obj.sender.user_id]:
@@ -143,3 +180,9 @@ class GoodPluginsPlugin:
     def time_convert(self, t):
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
+    
+
+# test
+if __name__ == "__main__":
+    gp = GoodPluginsPlugin()
+    gp.congrats("喜报喜报喜报喜报喜报喜报喜报喜报喜报喜报喜报喜报喜报喜报")
