@@ -6,6 +6,9 @@ from nakuru import (
 from botpy.message import Message, DirectMessage
 import random
 import requests
+# 设置插件路径
+import sys
+sys.path.append("./plugins")
 import moe
 import search_anime
 
