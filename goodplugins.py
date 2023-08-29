@@ -31,16 +31,8 @@ class GoodPluginsPlugin:
 
 
         if message == "moe" or message == "动漫图片":
-
-            if platform == "gocq":
-                res = self.get_moe(message_obj, self.busy)
-                return res[0], res[1]
-                
-            elif platform == "qqchan":
-                """
-                频道处理逻辑(频道暂时只支持回复字符串类型的信息，返回的信息都会被转成字符串，如果不想处理某一个平台的信息，直接返回False, None就行)
-                """
-                return True, tuple([True, "QQ频道暂时无法使用此插件，本机器人支持GOCQ平台，请在QQ里使用本插件。", "moe"])
+            res = self.get_moe(message_obj, self.busy)
+            return res[0], res[1]
         
         elif message == "sf" or message == "搜番":
             if platform == "gocq":
@@ -54,10 +46,9 @@ class GoodPluginsPlugin:
                 return True, tuple([True, "QQ频道SDK暂时无法使用此插件，本机器人支持GOCQ平台，请在QQ里使用本插件。", "moe"])
             
         elif message.startswith("喜报"):
-            if platform == "gocq":
-                msg = message[2:].strip()
-                res = self.congrats(msg)
-                return res[0], res[1]
+            msg = message[2:].strip()
+            res = self.congrats(msg)
+            return res[0], res[1]
         
         else:
             return False, None
@@ -70,8 +61,6 @@ class GoodPluginsPlugin:
             "version": "v1.0.3",
             "author": "Soulter"
         }
-
-
 
         # 热知识：检测消息开头指令，使用以下方法
         # if message.startswith("原神"):
