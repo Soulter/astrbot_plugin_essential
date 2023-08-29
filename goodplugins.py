@@ -31,7 +31,7 @@ class GoodPluginsPlugin:
 
 
         if message == "moe" or message == "动漫图片":
-            res = self.get_moe(message_obj, self.busy)
+            res = self.get_moe(message_obj, self.busy, platform)
             return res[0], res[1]
         
         elif message == "sf" or message == "搜番":
@@ -93,11 +93,17 @@ class GoodPluginsPlugin:
         # 发送图片
         return True, tuple([True, [Image.fromFileSystem(path + "/t.jpg")], "congrats"])
 
-    def get_moe(self, message_obj, busy):
-        if message_obj.sender.user_id in busy and busy[message_obj.sender.user_id]:
+    def get_moe(self, message_obj, busy, platform):
+        uid = ""
+        if platform == "gocq":
+            uid = message_obj.sender.user_id
+        if platform == "qqchan":
+            _t = json.loads(message_obj.author)
+            uid = _t.id
+        if uid in busy and busy[uid]:
             return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
         else:
-            busy[message_obj.sender.user_id] = True
+            busy[uid] = True
         """
         QQ平台指令处理逻辑
         """
@@ -112,13 +118,13 @@ class GoodPluginsPlugin:
                 with open("moe.jpg", "wb") as f:
                     f.write(resp.content)
                 # 发送图片
-                busy[message_obj.sender.user_id] = False
+                busy[uid] = False
                 return True, tuple([True, [Image.fromFileSystem("moe.jpg")], "moe"])
             except Exception as e:
-                busy[message_obj.sender.user_id] = False
+                busy[uid] = False
                 return True, tuple([False, f"获取图片失败: {str(e)}", "moe"])
         else:
-            busy[message_obj.sender.user_id] = False
+            busy[uid] = False
             return True, tuple([False, "获取图片失败", "moe"])
         
     def get_search_anime(self, message_obj, busy, qq_platform = None):
