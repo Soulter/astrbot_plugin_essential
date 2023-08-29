@@ -10,7 +10,6 @@ import PIL
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
-import json
 # import moe
 # import search_anime
 
@@ -99,8 +98,7 @@ class GoodPluginsPlugin:
         if platform == "gocq":
             uid = message_obj.sender.user_id
         if platform == "qqchan":
-            _t = json.loads(message_obj.author)
-            uid = _t.id
+            uid = message_obj.author.id
         if uid in busy and busy[uid]:
             return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
         else:
