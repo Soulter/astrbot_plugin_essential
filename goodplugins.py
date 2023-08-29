@@ -10,6 +10,7 @@ import PIL
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
+import json
 # import moe
 # import search_anime
 
