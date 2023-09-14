@@ -38,12 +38,6 @@ class GoodPluginsPlugin:
             if platform == "gocq":
                 res = self.get_search_anime(message_obj, self.busy, qq_platform)
                 return res[0], res[1]
-                
-            elif platform == "qqchan":
-                """
-                频道处理逻辑(频道暂时只支持回复字符串类型的信息，返回的信息都会被转成字符串，如果不想处理某一个平台的信息，直接返回False, None就行)
-                """
-                return True, tuple([True, "QQ频道SDK暂时无法使用此插件，本机器人支持GOCQ平台，请在QQ里使用本插件。", "moe"])
             
         elif message.startswith("喜报"):
             msg = message[2:].strip()
@@ -95,10 +89,7 @@ class GoodPluginsPlugin:
 
     def get_moe(self, message_obj, busy, platform):
         uid = ""
-        if platform == "gocq":
-            uid = message_obj.sender.user_id
-        if platform == "qqchan":
-            uid = message_obj.author.id
+        uid = message_obj.sender.user_id
         if uid in busy and busy[uid]:
             return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
         else:
