@@ -12,6 +12,7 @@ from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
 from model.platform.qq import QQ
 import time
+from .poke import poke_resource
 # import moe
 # import search_anime
 
@@ -21,6 +22,17 @@ class GoodPluginsPlugin:
     """
     def __init__(self) -> None:
         self.busy = {}
+        self.marry = {}
+        # 获取本文件的绝对路径
+        self.path = os.path.abspath(os.path.dirname(__file__))
+        # 读取marry.json
+        try:
+            with open(self.path + "/marry.json", "r") as f:
+                self.marry = json.load(f)
+        except Exception as e:
+            # 创建
+            with open(self.path + "/marry.json", "w") as f:
+                json.dump({}, f)
         pass
 
     # def set_busy(self, qq: int):
@@ -31,6 +43,8 @@ class GoodPluginsPlugin:
 
     def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQ = None):
 
+        if message_obj.sub_type == "poke":
+            return True, tuple([True, [Plain(random.choice(poke_resource))], "poke"])
 
         if message == "moe" or message == "动漫图片":
             res = self.get_moe(message_obj, self.busy, platform)
@@ -52,6 +66,12 @@ class GoodPluginsPlugin:
             if platform == "gocq" and message_obj.type == "GroupMessage":
                 self.random_sleep(message_obj.group_id, qq_platform)
                 return True, None
+            
+        elif message.startswith("marry"):
+            if platform == "gocq" and message_obj.type == "GroupMessage":
+                res = self.random_marry(message_obj.sender.user_id, message_obj.group_id, qq_platform)
+                return True, tuple([True, res, "marry"])
+
         else:
             return False, None
              
@@ -181,7 +201,25 @@ class GoodPluginsPlugin:
         ret = "晚安zZ\n被禁名称：" + ls.nickname + "\n被禁时间：28800秒" + "\n解禁时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + 60 * 60 * 8))
         qq_platform.send(group_id, ret)
 
-    
+    def random_marry(self, user_id, group_id, qq_platform: QQ):
+        if group_id not in self.marry:
+            self.marry[group_id] = {}
+        # 时间24小时
+        if user_id in self.marry[group_id] and self.marry[group_id][user_id]["time"] > int(time.time()) - 60 * 60 * 24:
+            return [Plain("你的今日对象是: " + self.marry[group_id][user_id]["name"]), Image.fromURL(self.marry[group_id][user_id]["url"])]
+        else:
+            ls = qq_platform.nakuru_method_invoker(qq_platform.get_client().getGroupMemberList, group_id)
+            ls = random.choice(ls)
+            url = "https://q1.qlogo.cn/g?b=qq&nk=" + str(ls.user_id) + "&s=640"
+            ret = "你的今日对象是：" + ls.nickname
+            self.marry[group_id][user_id] = {"name": ls.nickname, "url": url, "time": int(time.time())}
+            with open(self.path + "/marry.json", "w") as f:
+                json.dump(self.marry, f)
+        return [Plain(ret), Image.fromURL(url)]
+
+    def poke(self):
+        random.choice(poke_resource)
+        
 
 # test
 if __name__ == "__main__":
