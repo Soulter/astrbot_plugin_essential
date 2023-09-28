@@ -10,6 +10,8 @@ import PIL
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
+from model.platform.qq import QQ
+import time
 # import moe
 # import search_anime
 
@@ -27,7 +29,7 @@ class GoodPluginsPlugin:
     # def set_free(self, qq: int):
     #     self.busy[qq] = False
 
-    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform = None):
+    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQ = None):
 
 
         if message == "moe" or message == "动漫图片":
@@ -43,7 +45,13 @@ class GoodPluginsPlugin:
             msg = message[2:].strip()
             res = self.congrats(msg)
             return res[0], res[1]
-        
+
+        elif message.startswith("sleep"):
+            if role != "admin":
+                return True, tuple([False, "禁言失败，权限不足。", "sleep"])
+            if platform == "gocq" and message_obj.type == "GroupMessage":
+                self.random_sleep(message_obj.group_id, qq_platform)
+                return True, None
         else:
             return False, None
              
@@ -51,7 +59,7 @@ class GoodPluginsPlugin:
         return {
             "name": "GoodPlugins",
             "desc": "收集一些好玩的插件（随机动漫图片、以图搜番等）",
-            "help": "指令: \nmoe或者动漫图片\n效果: 随机发送一张动漫图片\n\nsf或者搜番 然后带上图片\n效果: 以图搜番\n\n喜报 xxx\n效果：喜报生成器",
+            "help": "指令: \nmoe或者动漫图片\n效果: 随机发送一张动漫图片\n\nsf或者搜番 然后带上图片\n效果: 以图搜番\n\n喜报 xxx\n效果：喜报生成器\n\nsleep\n效果：随机禁言一个人8小时\n\n",
             "version": "v1.0.3",
             "author": "Soulter"
         }
@@ -161,10 +169,18 @@ class GoodPluginsPlugin:
             busy[message_obj.sender.user_id] = False
             raise e
         
-
     def time_convert(self, t):
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
+    
+    def random_sleep(self, group_id, qq_platform: QQ):
+        ls = qq_platform.nakuru_method_invoker(qq_platform.get_client().getGroupMemberList, group_id)
+        ls = random.choice(ls)
+        # 禁言8小时
+        qq_platform.nakuru_method_invoker(qq_platform.get_client().mute, group_id, ls.user_id, 60 * 60 * 8)
+        ret = "晚安zZ\n被禁名称：" + ls.nickname + "\n被禁时间：28800秒" + "\n解禁时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + 60 * 60 * 8))
+        qq_platform.send(group_id, ret)
+
     
 
 # test
