@@ -125,9 +125,7 @@ class GoodPluginsPlugin:
         """
         QQ平台指令处理逻辑
         """
-        urls = ["https://t.mwm.moe/pc/",
-                "https://t.lizi.moe/mp",
-                "https://t.lizi.moe/fj",]
+        urls = ["https://t.mwm.moe/pc/","https://t.mwm.moe/mp"]
         
         resp = requests.get(random.choice(urls))
         if resp.status_code == 200:
