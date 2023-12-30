@@ -194,7 +194,7 @@ class GoodPluginsPlugin:
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
     
-    def random_sleep(self, group_id, qq_platform: QQ):
+    def random_sleep(self, group_id, qq_platform: QQOfficial):
         ls = qq_platform.nakuru_method_invoker(qq_platform.get_client().getGroupMemberList, group_id)
         ls = random.choice(ls)
         # 禁言8小时
@@ -202,7 +202,7 @@ class GoodPluginsPlugin:
         ret = "晚安zZ\n被禁名称：" + ls.nickname + "\n被禁时间：28800秒" + "\n解禁时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + 60 * 60 * 8))
         qq_platform.send(group_id, ret)
 
-    def random_marry(self, user_id, group_id, qq_platform: QQ):
+    def random_marry(self, user_id, group_id, qq_platform: QQOfficial):
         if group_id not in self.marry:
             self.marry[group_id] = {}
         # 时间24小时
