@@ -10,7 +10,10 @@ import PIL
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
-from model.platform.qq import QQ
+try:
+    from model.platform.qq_official import QQOfficial
+except:
+    raise Exception("版本不兼容，请更新 AstrBot。")
 import time
 from .poke import poke_resource
 # import moe
@@ -41,7 +44,7 @@ class GoodPluginsPlugin:
     # def set_free(self, qq: int):
     #     self.busy[qq] = False
 
-    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQ = None):
+    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQOfficial = None):
 
         if message_obj.sub_type == "poke":
             return True, tuple([True, [Plain(random.choice(poke_resource))], "poke"])
@@ -64,12 +67,12 @@ class GoodPluginsPlugin:
             if role != "admin":
                 return True, tuple([False, "禁言失败，权限不足。", "sleep"])
             if platform == "gocq" and message_obj.type == "GroupMessage":
-                self.random_sleep(message_obj.group_id, qq_platform)
+                self.random_sleep(message_obj.group_id, )
                 return True, None
             
         elif message.startswith("marry"):
             if platform == "gocq" and message_obj.type == "GroupMessage":
-                res = self.random_marry(message_obj.sender.user_id, message_obj.group_id, qq_platform)
+                res = self.random_marry(message_obj.sender.user_id, message_obj.group_id, )
                 return True, tuple([True, res, "marry"])
 
         else:
