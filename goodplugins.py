@@ -11,7 +11,7 @@ from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
 try:
-    from model.platform.qq_official import QQOfficial
+    from model.platform.qq_gocq import QQGOCQ
 except:
     raise Exception("版本不兼容，请更新 AstrBot。")
 import time
@@ -44,7 +44,7 @@ class GoodPluginsPlugin:
     # def set_free(self, qq: int):
     #     self.busy[qq] = False
 
-    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQOfficial = None):
+    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQGOCQ = None):
 
         if message_obj.sub_type == "poke":
             return True, tuple([True, [Plain(random.choice(poke_resource))], "poke"])
@@ -194,7 +194,7 @@ class GoodPluginsPlugin:
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
     
-    def random_sleep(self, group_id, qq_platform: QQOfficial):
+    def random_sleep(self, group_id, qq_platform: QQGOCQ):
         ls = qq_platform.nakuru_method_invoker(qq_platform.get_client().getGroupMemberList, group_id)
         ls = random.choice(ls)
         # 禁言8小时
@@ -202,7 +202,7 @@ class GoodPluginsPlugin:
         ret = "晚安zZ\n被禁名称：" + ls.nickname + "\n被禁时间：28800秒" + "\n解禁时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + 60 * 60 * 8))
         qq_platform.send(group_id, ret)
 
-    def random_marry(self, user_id, group_id, qq_platform: QQOfficial):
+    def random_marry(self, user_id, group_id, qq_platform: QQGOCQ):
         if group_id not in self.marry:
             self.marry[group_id] = {}
         # 时间24小时
