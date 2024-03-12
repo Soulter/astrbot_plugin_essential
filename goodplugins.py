@@ -10,14 +10,21 @@ import PIL
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
+flag_not_support = False
 try:
-    from model.platform.qq_gocq import QQGOCQ
-except:
-    raise Exception("版本不兼容，请更新 AstrBot。")
+    from util.plugin_dev.api.v1.config import *
+    from util.plugin_dev.api.v1.bot import (
+        PluginMetadata,
+        PluginType,
+        AstrMessageEvent,
+        CommandResult,
+    )
+    from util.plugin_dev.api.v1.register import register_llm, unregister_llm
+except ImportError:
+    flag_not_support = True
+    print("llms: 导入接口失败。请升级到 AstrBot 最新版本。")
 import time
 from .poke import poke_resource
-# import moe
-# import search_anime
 
 class GoodPluginsPlugin:
     """
@@ -38,41 +45,44 @@ class GoodPluginsPlugin:
                 json.dump({}, f)
         pass
 
-    # def set_busy(self, qq: int):
-    #     self.busy[qq] = True
-
-    # def set_free(self, qq: int):
-    #     self.busy[qq] = False
-
-    def run(self, message: str, role: str, platform: str, message_obj: GroupMessage, qq_platform: QQGOCQ = None):
+    def run(self, ame: AstrMessageEvent):
+        message = ame.message_str
+        message_obj = ame.message_obj
+        platform = ame.platform
+        role = ame.role
 
         if message_obj.sub_type == "poke":
             return True, tuple([True, [Plain(random.choice(poke_resource))], "poke"])
 
         if message == "moe" or message == "动漫图片":
-            res = self.get_moe(message_obj, self.busy, platform)
-            return res[0], res[1]
+            res = self.get_moe(message_obj, self.busy)
+            return res
         
         elif message == "sf" or message == "搜番":
             if platform == "gocq":
-                res = self.get_search_anime(message_obj, self.busy, qq_platform)
-                return res[0], res[1]
+                res = self.get_search_anime(message_obj, self.busy)
+                return res
             
         elif message.startswith("喜报"):
             msg = message[2:].strip()
             res = self.congrats(msg)
-            return res[0], res[1]
+            return res
 
         elif message.startswith("sleep"):
             if role != "admin":
-                return True, tuple([False, "禁言失败，权限不足。", "sleep"])
-            if platform == "gocq" and message_obj.type == "GroupMessage":
-                self.random_sleep(message_obj.group_id, )
-                return True, None
+                return CommandResult(
+                    True, False, [Plain("你没有权限执行此操作")], "sleep"
+                )
+            if platform.platform_name == "gocq" and message_obj.type == "GroupMessage":
+                self.random_sleep(message_obj.group_id, platform.platform_instance)
+                return CommandResult(
+                    True, True, [Plain("已执行")], "sleep"
+                )
+            
             
         elif message.startswith("marry"):
-            if platform == "gocq" and message_obj.type == "GroupMessage":
-                res = self.random_marry(message_obj.sender.user_id, message_obj.group_id, )
+            if platform.platform_name == "gocq" and message_obj.type == "GroupMessage":
+                res = self.random_marry(message_obj.sender.user_id, message_obj.group_id, platform.platform_instance)
                 return True, tuple([True, res, "marry"])
 
         else:
@@ -86,10 +96,6 @@ class GoodPluginsPlugin:
             "version": "v1.0.3",
             "author": "Soulter"
         }
-
-        # 热知识：检测消息开头指令，使用以下方法
-        # if message.startswith("原神"):
-        #     pass
 
     def congrats(self, msg):
         # 超过20个字，加一个换行
@@ -116,15 +122,18 @@ class GoodPluginsPlugin:
         # 保存图片
         img.save(path + "/t.jpg")
         # 发送图片
-        return True, tuple([True, [Image.fromFileSystem(path + "/t.jpg")], "congrats"])
+        return CommandResult(
+            True, True, [Image.fromFileSystem(path + "/t.jpg")], "congrats"
+        )
 
-    def get_moe(self, message_obj, busy, platform):
+    def get_moe(self, message_obj, busy):
         uid = ""
         uid = message_obj.sender.user_id
         if uid in busy and busy[uid]:
-            return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
-        else:
-            busy[uid] = True
+            return CommandResult(
+                True, True, [Plain("有一个服务于你的任务正在执行，请稍等。")], "moe"
+            )
+        busy[uid] = True
         """
         QQ平台指令处理逻辑
         """
@@ -138,30 +147,31 @@ class GoodPluginsPlugin:
                     f.write(resp.content)
                 # 发送图片
                 busy[uid] = False
-                return True, tuple([True, [Image.fromFileSystem("moe.jpg")], "moe"])
+                return CommandResult(
+                    True, True, [Image.fromFileSystem("moe.jpg")], "moe"
+                )
             except Exception as e:
                 busy[uid] = False
-                return True, tuple([False, f"获取图片失败: {str(e)}", "moe"])
+                return CommandResult(
+                    True, False, [Plain("获取图片失败")], "moe"
+                )
         else:
             busy[uid] = False
-            return True, tuple([False, "获取图片失败", "moe"])
+            return CommandResult(
+                True, False, [Plain("获取图片失败")], "moe"
+            )
         
     def get_search_anime(self, message_obj, busy, qq_platform = None):
         if message_obj.sender.user_id in busy and busy[message_obj.sender.user_id]:
-                    return True, tuple([True, "有一个服务于你的任务正在执行，请稍等。", "moe"])
-        else:
-            busy[message_obj.sender.user_id] = True
+            return CommandResult(
+                True, True, [Plain("有一个服务于你的任务正在执行，请等待。")], "sf"
+            )
+        busy[message_obj.sender.user_id] = True
         url = "https://api.trace.moe/search?anilistInfo&url=" 
         try:
             if isinstance(message_obj.message[1], Image):
                 url += message_obj.message[1].url
                 print(url)
-                if qq_platform != None:
-                    try:
-                        qq_platform.send(message_obj, "正在搜索中，请稍等。")
-                    except Exception as e:
-                        print(e)
-                        pass
                 resp = requests.get(url)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -170,22 +180,25 @@ class GoodPluginsPlugin:
                         data["result"][0]["from"] = self.time_convert(data["result"][0]["from"])
                         data["result"][0]["to"] = self.time_convert(data["result"][0]["to"])
 
-                        # name = data["result"][0]["anilist"]["title"]["native"]
-                        # 调用https://trace.moe/anilist/翻译成中文
-
                         warn = ""
                         if float(data["result"][0]["similarity"]) < 0.8:
                             warn = "相似度过低，可能不是同一番剧。建议：相同尺寸大小的截图; 去除四周的黑边\n\n"
 
                         busy[message_obj.sender.user_id] = False
-                        return True, tuple([True, [Plain(f"{warn}番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
-                                                Image.fromURL(data['result'][0]['image'])], "sf"])
+                        return CommandResult(
+                            True, True, [Plain(f"{warn}番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
+                                        Image.fromURL(data['result'][0]['image'])], "sf"
+                        )
                     else:
                         busy[message_obj.sender.user_id] = False
-                        return True, tuple([False, "没有找到相关番剧", "sf"])
+                        return CommandResult(
+                            True, False, [Plain("没有找到番剧")], "sf"
+                        )
                 else:
                     busy[message_obj.sender.user_id] = False
-                    return True, tuple([False, "api出错", "sf"])
+                    return CommandResult(
+                        True, False, [Plain(f"请求失败, code: {resp.status_code}")], "sf"
+                    )
         except Exception as e:
             busy[message_obj.sender.user_id] = False
             raise e
@@ -194,7 +207,7 @@ class GoodPluginsPlugin:
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
     
-    def random_sleep(self, group_id, qq_platform: QQGOCQ):
+    def random_sleep(self, group_id, qq_platform):
         ls = qq_platform.nakuru_method_invoker(qq_platform.get_client().getGroupMemberList, group_id)
         ls = random.choice(ls)
         # 禁言8小时
@@ -202,7 +215,7 @@ class GoodPluginsPlugin:
         ret = "晚安zZ\n被禁名称：" + ls.nickname + "\n被禁时间：28800秒" + "\n解禁时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + 60 * 60 * 8))
         qq_platform.send(group_id, ret)
 
-    def random_marry(self, user_id, group_id, qq_platform: QQGOCQ):
+    def random_marry(self, user_id, group_id, qq_platform):
         if group_id not in self.marry:
             self.marry[group_id] = {}
         # 时间24小时
