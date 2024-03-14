@@ -50,9 +50,10 @@ class GoodPluginsPlugin:
         message_obj = ame.message_obj
         platform = ame.platform
         role = ame.role
-
-        if message_obj.sub_type == "poke":
-            return True, tuple([True, [Plain(random.choice(poke_resource))], "poke"])
+        
+        if message_obj.tag == 'gocq' and message_obj.type == "GroupMessage":
+            if message_obj.raw_message.sub_type == "poke":
+                return True, tuple([True, [Plain(random.choice(poke_resource))], "poke"])
 
         if message == "moe" or message == "动漫图片":
             res = self.get_moe(message_obj, self.busy)
