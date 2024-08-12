@@ -1,5 +1,6 @@
 import random, os
 import requests
+import urllib.parse
 from PIL import Image as PILImage
 from PIL import ImageDraw as PILImageDraw
 from PIL import ImageFont as PILImageFont
@@ -15,7 +16,6 @@ try:
 except ImportError:
     flag_not_support = True
     print("llms: 导入接口失败。请升级到 AstrBot 最新版本。")
-import time
 
 class GoodPluginsPlugin:
     def __init__(self, context: Context) -> None:
@@ -48,9 +48,9 @@ class GoodPluginsPlugin:
         bg = path + "/congrats.jpg"
         img = PILImage.open(bg)
         draw = PILImageDraw.Draw(img)
-        
         font = PILImageFont.truetype(path + "/simhei.ttf", 65)
-        draw.text((img.size[0] / 2 - font.getsize(tmpl)[0] / 2, img.size[1] / 2 - font.getsize(tmpl)[1] / 2), msg, 
+        
+        draw.text((img.size[0] / 2 - 65 / 2, img.size[1] / 2 - 65 / 2), msg, 
                   font=font, fill=(255, 0, 0), stroke_width=3, stroke_fill=(255, 255, 0))
         img.save(path + "/t.jpg")
         return CommandResult().file_image(path + "/t.jpg")
@@ -90,7 +90,9 @@ class GoodPluginsPlugin:
         try:
             if isinstance(message_obj.message[1], Image):
                 try:
-                    url += message_obj.message[1].url
+                    # 需要经过url encode
+                    image_url = urllib.parse.quote(message_obj.message[1].url)
+                    url += image_url
                 except BaseException as e:
                     return CommandResult().error(f"发现不受本插件支持的图片数据：{type(message_obj.message[1])}，插件无法解析。")
                 
@@ -108,8 +110,9 @@ class GoodPluginsPlugin:
 
                         self.busy[message_obj.sender.user_id] = False
                         return CommandResult(
-                            True, True, [Plain(f"{warn}番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
-                                        Image.fromURL(data['result'][0]['image'])], "sf"
+                            message_chain=[[Plain(f"{warn}番名: {data['result'][0]['anilist']['title']['native']}\n相似度: {data['result'][0]['similarity']}\n剧集: 第{data['result'][0]['episode']}集\n时间: {data['result'][0]['from']} - {data['result'][0]['to']}\n精准空降截图:"),
+                                        Image.fromURL(data['result'][0]['image'])]],
+                            use_t2i=False
                         )
                     else:
                         self.busy[message_obj.sender.user_id] = False
