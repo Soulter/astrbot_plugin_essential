@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务器信息</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            height: 90%;
+            box-sizing: border-box;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .card h1 {
+            font-size: 32px;
+            margin: 0 0 20px;
+        }
+        .card p {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .card .motd {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+            width: 100%;
+            text-align: center;
+            font-size: 20px;
+        }
+        .card .players, .card .version {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 20px;
+            font-size: 18px;
+        }
+        .card .icon {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .card .icon img {
+            max-width: 150px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .status.online {
+            color: green;
+        }
+        .status.offline {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">
+            <img src="{{ icon }}" alt="Server Icon">
+        </div>
+        <h1>{{ motd.clean[0] }}</h1>
+        <div class="motd">
+            <p>{{ motd.clean[1] }}</p>
+        </div>
+        <div class="players">
+            <p>在线玩家: {{ players.online }}</p>
+            <p>最大玩家: {{ players.max }}</p>
+        </div>
+        <div class="version">
+            <p>版本: {{ version }}</p>
+            <p>协议: {{ protocol_name }}</p>
+        </div>
+        <p>IP: {{ ip }}:{{ port }}</p>
+        <p class="status {{ 'online' if online else 'offline' }}">{{ '在线' if online else '离线' }}</p>
+    </div>
+</body>
+</html>
