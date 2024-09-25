@@ -1,4 +1,4 @@
-import random, os, json
+import random, os, json, datetime
 import aiohttp
 import urllib.parse
 import logging
@@ -17,7 +17,8 @@ logger = logging.getLogger("astrbot")
 
 class Main:
     def __init__(self, context: Context) -> None:
-        PLUGIN_NAME = "astrbot_plugin_essential"
+        self.PLUGIN_NAME = "astrbot_plugin_essential"
+        PLUGIN_NAME = self.PLUGIN_NAME
         path = os.path.abspath(os.path.dirname(__file__))
         self.mc_html_tmpl = open(path + "/templates/mcs.html", "r").read()
         self.what_to_eat_data: list = json.loads(open(path + "/resources/food.json", "r").read())['data']
@@ -28,8 +29,21 @@ class Main:
         context.register_commands(PLUGIN_NAME, "mcs", "查mc服务器", 1, self.mcs)
         context.register_commands(PLUGIN_NAME, "一言", "来一条一言", 1, self.hitokoto)
         context.register_commands(PLUGIN_NAME, "今天吃什么", "今天吃什么", 1, self.what_to_eat)
+        context.register_commands(PLUGIN_NAME, "喜加一", "EPIC 喜加一", 1, self.epic_free_game)
+        context.register_commands(PLUGIN_NAME, r"^(早安|晚安)", "和Bot说早晚安，记录睡眠时间，培养良好作息", 1, self.good_morning, use_regex=True, ignore_prefix=True)
+        
+        if not os.path.exists(f"data/{PLUGIN_NAME}_data.json"):
+            with open(f"data/{PLUGIN_NAME}_data.json", "w") as f:
+                f.write(json.dumps({}, ensure_ascii=False, indent=2))
+        with open(f"data/{PLUGIN_NAME}_data.json", "r") as f:
+            self.data = json.loads(f.read())
+        self.good_morning_data = self.data.get("good_morning", {})
+        
+    def time_convert(self, t):
+        m, s = divmod(t, 60)
+        return f"{int(m)}分{int(s)}秒"
 
-    def congrats(self, message: AstrMessageEvent, context: Context):
+    async def congrats(self, message: AstrMessageEvent, context: Context):
         msg = message.message_str.replace("喜报", "").strip()
         for i in range(20, len(msg), 20):
             msg = msg[:i] + "\n" + msg[i:]
@@ -134,11 +148,6 @@ class Main:
 版本: {data['version']}
 MOTD: {motd}""").use_t2i(False)
         
-        
-    def time_convert(self, t):
-        m, s = divmod(t, 60)
-        return f"{int(m)}分{int(s)}秒"
-
     async def hitokoto(self, message: AstrMessageEvent, context: Context):
         url = "https://v1.hitokoto.cn"
         async with aiohttp.ClientSession() as session:
@@ -175,3 +184,120 @@ MOTD: {motd}""").use_t2i(False)
         
         ret = f"今天吃 {random.choice(self.what_to_eat_data)}！"
         return CommandResult().message(ret)
+    
+    async def epic_free_game(self, message: AstrMessageEvent, context: Context):
+        url = "https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    return CommandResult().error("请求失败")
+                data = await resp.json()
+        
+        games = []
+        upcoming = []
+        
+        for game in data["data"]["Catalog"]["searchStore"]["elements"]:
+            title = game.get("title", "未知")
+            try:
+                if not game.get("promotions"):
+                    continue
+                original_price = game["price"]["totalPrice"]["fmtPrice"]["originalPrice"]
+                discount_price = game["price"]["totalPrice"]["fmtPrice"]["discountPrice"]
+                promotions = game["promotions"]["promotionalOffers"]
+                upcoming_promotions = game["promotions"]["upcomingPromotionalOffers"]
+                
+                if promotions:
+                    promotion = promotions[0]["promotionalOffers"][0]
+                else:
+                    promotion = upcoming_promotions[0]["promotionalOffers"][0]
+                start = promotion["startDate"]
+                end = promotion["endDate"]
+                # 2024-09-19T15:00:00.000Z
+                start_utc8 = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
+                start_human = start_utc8.strftime("%Y-%m-%d %H:%M")
+                end_utc8 = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours=8)
+                end_human = end_utc8.strftime("%Y-%m-%d %H:%M")
+                discount = float(promotion["discountSetting"]["discountPercentage"])
+                if discount != 0:
+                    # 过滤掉不是免费的游戏
+                    continue
+                
+                if promotions:
+                    games.append(f"【{title}】\n原价: {original_price} | 现价: {discount_price}\n活动时间: {start_human} - {end_human}")
+                else:
+                    upcoming.append(f"【{title}】\n原价: {original_price} | 现价: {discount_price}\n活动时间: {start_human} - {end_human}")
+
+            except BaseException as e:
+                raise e
+                games.append(f"处理 {title} 时出现错误")
+        
+        if len(games) == 0:
+            return CommandResult().message("暂无免费游戏")
+        return CommandResult().message("【EPIC 喜加一】\n" + "\n\n".join(games) + "\n\n" + "【即将免费】\n" + "\n\n".join(upcoming)).use_t2i(False)
+    
+    async def good_morning(self, message: AstrMessageEvent, context: Context):
+        '''CREDIT: 灵感部分借鉴自：https://github.com/MinatoAquaCrews/nonebot_plugin_morning'''
+        umo_id = message.unified_msg_origin
+        user_id = message.message_obj.sender.user_id
+        user_name = message.message_obj.sender.nickname
+        curr_utc8 = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        curr_human = curr_utc8.strftime("%Y-%m-%d %H:%M:%S")
+        
+        is_night = "晚安" in message.message_str
+        
+        if umo_id in self.good_morning_data:
+            umo = self.good_morning_data[umo_id]
+        else:
+            umo = {}
+        if user_id in umo:
+            user = umo[user_id]
+        else:
+            user = {
+                "daily": {
+                    "morning_time": "",
+                    "night_time": "",
+                }
+            }
+        
+        if is_night:
+            user["daily"]["night_time"] = curr_human
+            user["daily"]["morning_time"] = "" # 晚安后清空早安时间
+        else:
+            user["daily"]["morning_time"] = curr_human
+            
+        umo[user_id] = user
+        self.good_morning_data[umo_id] = umo
+        
+        with open(f"data/{self.PLUGIN_NAME}_data.json", "w") as f:
+            f.write(json.dumps(self.good_morning_data, ensure_ascii=False, indent=2))
+            
+        # 根据 day 判断今天是本群第几个睡觉的
+        # TODO: 此处可以缓存
+        curr_day: int = curr_utc8.day
+        curr_day_sleeping = 0
+        for v in umo.values():
+            if v["daily"]["night_time"] and not v["daily"]["morning_time"]:
+                # he/she is sleeping
+                user_day = datetime.datetime.strptime(v["daily"]["night_time"], "%Y-%m-%d %H:%M:%S").day
+                if user_day == curr_day:
+                    # 今天睡觉的人数
+                    curr_day_sleeping += 1
+            
+        
+        if not is_night:
+            # 计算睡眠时间: xx小时xx分
+            # 此处可以联动 TODO
+            sleep_duration_human = ""
+            if user["daily"]["night_time"]:
+                night_time = datetime.datetime.strptime(user["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+                morning_time = datetime.datetime.strptime(user["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
+                sleep_duration = (morning_time - night_time).total_seconds()
+                hrs = int(sleep_duration / 3600)
+                mins = int((sleep_duration % 3600) / 60)
+                sleep_duration_human = f"{hrs}小时{mins}分"
+                
+            return CommandResult().message(f"早安喵，{user_name}！\n现在是 {curr_human}，昨晚你睡了 {sleep_duration_human}。").use_t2i(False)
+        else:
+            # 此处可以联动 TODO
+            return CommandResult().message(f"晚安喵，{user_name}！\n现在是 {curr_human}，你是本群今天第 {curr_day_sleeping} 个睡觉的。").use_t2i(False)

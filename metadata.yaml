@@ -1,6 +1,6 @@
 name: astrbot_plugin_essential
-desc: 随机动漫图片、以图搜番、Minecraft服务器、一言、今天吃什么
+desc: 随机动漫图片、以图搜番、Minecraft服务器、一言、今天吃什么、群早晚安记录、EPIC喜加一。帮助：https://github.com/Soulter/astrbot_plugin_essential
 help:
-version: v1.0.5
+version: v1.0.6
 author: Soulter
 repo: https://github.com/Soulter/astrbot_plugin_essential
