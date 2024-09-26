@@ -1,6 +1,6 @@
-# GoodPlugins
+# AstrBot Essential
 
-**QQChannelChatGPT插件**
+为 [AstrBot](https://github.com/Soulter/AstrBot) 支持基本的娱乐功能。
 
 支持功能：
 - 以图搜番（https://trace.moe）
