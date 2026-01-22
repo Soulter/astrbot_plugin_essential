@@ -496,15 +496,14 @@ class Main(Star):
         curr_date_str = curr_utc8.strftime("%Y-%m-%d")
 
         self.invalidate_sleep_cache(umo_id, curr_date_str)
+        
         curr_day_sleeping = 0
+        curr_date_prefix = curr_utc8.strftime("%Y-%m-%d") # 获取今天的日期
         for v in umo.values():
-            if v["daily"]["night_time"] and not v["daily"]["morning_time"]:
-                # he/she is sleeping
-                user_day = datetime.datetime.strptime(
-                    v["daily"]["night_time"], "%Y-%m-%d %H:%M:%S"
-                ).day
-                if user_day == curr_day:
-                    curr_day_sleeping += 1
+            n_time = v["daily"]["night_time"]
+            if n_time and n_time.startswith(curr_date_prefix):
+                # 只要晚安是今天，就代表今天睡了一个
+                curr_day_sleeping += 1
         
         # 更新缓存为最新计算结果
         self.update_sleep_cache(umo_id, curr_date_str, curr_day_sleeping)
@@ -524,10 +523,17 @@ class Main(Star):
                 mins = int((sleep_duration % 3600) / 60)
                 sleep_duration_human = f"{hrs}小时{mins}分"
 
+            good_moring_text = ""
+
+            if sleep_duration_human:
+                good_moring_text = f"早上好喵，{user_name}！\n现在是 {curr_human}，昨晚你睡了 {sleep_duration_human}。"
+            else:
+                good_moring_text = f"早上好喵，{user_name}！\n现在是 {curr_human}，昨晚似乎没说晚安呢~"
+
             return (
                 CommandResult()
                 .message(
-                    f"早上好喵，{user_name}！\n现在是 {curr_human}，昨晚你睡了 {sleep_duration_human}。"
+                    good_moring_text
                 )
                 .use_t2i(False)
             )
