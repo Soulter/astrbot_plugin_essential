@@ -49,7 +49,7 @@ class Main(Star):
 
         self.search_anmime_demand_users = {}
         self.daily_sleep_cache = {}
-        self.good_morning_cd = {} 
+        self.good_morning_cd = {}
 
     def _get_report_font_size(self) -> int:
         size = self.config.get("report_font_size", 65)
@@ -59,10 +59,20 @@ class Main(Star):
             return 65
         return size if size > 0 else 65
 
+    def _is_good_morning_enabled(self) -> bool:
+        value = self.config.get("good_morning_enabled", True)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value != 0
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
+        return True
+
     def time_convert(self, t):
         m, s = divmod(t, 60)
         return f"{int(m)}分{int(s)}秒"
-    
+
     def get_cached_sleep_count(self, umo_id: str, date_str: str) -> int:
         """获取缓存的睡觉人数"""
         if umo_id not in self.daily_sleep_cache:
@@ -76,15 +86,20 @@ class Main(Star):
         self.daily_sleep_cache[umo_id][date_str] = count
 
     def invalidate_sleep_cache(self, umo_id: str, date_str: str):
-            """使缓存失效"""
-            if umo_id in self.daily_sleep_cache and date_str in self.daily_sleep_cache[umo_id]:
-                del self.daily_sleep_cache[umo_id][date_str]
+        """使缓存失效"""
+        if (
+            umo_id in self.daily_sleep_cache
+            and date_str in self.daily_sleep_cache[umo_id]
+        ):
+            del self.daily_sleep_cache[umo_id][date_str]
 
-    def check_good_morning_cd(self, user_id: str, current_time: datetime.datetime) -> bool:
+    def check_good_morning_cd(
+        self, user_id: str, current_time: datetime.datetime
+    ) -> bool:
         """检查用户是否在CD中，返回True表示在CD中"""
         if user_id not in self.good_morning_cd:
             return False
-        
+
         last_time = self.good_morning_cd[user_id]
         time_diff = (current_time - last_time).total_seconds()
         return time_diff < 1800  # 硬编码30分钟
@@ -449,16 +464,25 @@ class Main(Star):
     @filter.regex(r"^(早安|晚安)")
     async def good_morning(self, message: AstrMessageEvent):
         """和Bot说早晚安，记录睡眠时间，培养良好作息"""
+        if not self._is_good_morning_enabled():
+            return
+
         # CREDIT: 灵感部分借鉴自：https://github.com/MinatoAquaCrews/nonebot_plugin_morning
         umo_id = message.unified_msg_origin
         user_id = message.message_obj.sender.user_id
         user_name = message.message_obj.sender.nickname
-        curr_utc8 = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+        curr_utc8 = datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(hours=8))
+        )
         curr_human = curr_utc8.strftime("%Y-%m-%d %H:%M:%S")
 
         # 检查CD
         if self.check_good_morning_cd(user_id, curr_utc8):
-            return CommandResult().message("你刚刚已经说过早安/晚安了，请30分钟后再试喵~").use_t2i(False)
+            return (
+                CommandResult()
+                .message("你刚刚已经说过早安/晚安了，请30分钟后再试喵~")
+                .use_t2i(False)
+            )
 
         is_night = "晚安" in message.message_str
 
@@ -487,7 +511,7 @@ class Main(Star):
 
         with open(f"data/{self.PLUGIN_NAME}_data.json", "w", encoding="utf-8") as f:
             f.write(json.dumps(self.good_morning_data, ensure_ascii=False, indent=2))
-            
+
         # 更新CD
         self.update_good_morning_cd(user_id, curr_utc8)
 
@@ -505,7 +529,7 @@ class Main(Star):
                 ).day
                 if user_day == curr_day:
                     curr_day_sleeping += 1
-        
+
         # 更新缓存为最新计算结果
         self.update_sleep_cache(umo_id, curr_date_str, curr_day_sleeping)
 

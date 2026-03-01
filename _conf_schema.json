@@ -4,5 +4,11 @@
     "type": "int",
     "default": 65,
     "hint": "用于调整喜报和悲报的字体大小，默认值为65"
+  },
+  "good_morning_enabled": {
+    "description": "是否启用早安/晚安睡眠记录",
+    "type": "bool",
+    "default": true,
+    "hint": "关闭后将不响应“早安/晚安”并停止记录睡眠数据"
   }
 }
